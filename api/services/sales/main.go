@@ -4,13 +4,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"os"
+	"os/signal"
 	"runtime"
+	"syscall"
 	"time"
 
 	"github.com/ardanlabs/conf/v3"
 	"github.com/ardanlabs/kronk/cmd/server/foundation/logger"
-	"github.com/ardanlabs/kronk/sdk/kronk/observ/otel"
+	"github.com/ardanlabs/service/app/sdk/debug"
 )
 
 func main() {
@@ -22,7 +25,7 @@ func main() {
 		},
 	}
 
-	log = logger.NewWithEvents(os.Stdout, logger.LevelInfo, "SALES", otel.GetTraceID, events)
+	log = logger.NewWithEvents(os.Stdout, logger.LevelInfo, "SALES", nil, events)
 
 	// -------------------------------------------------------------------------
 
@@ -82,6 +85,27 @@ func run(ctx context.Context, log *logger.Logger) error {
 	log.Info(ctx, "startup", "config", out)
 
 	log.BuildInfo(ctx)
+
+	// -------------------------------------------------------------------------
+	// Start Debug Service
+
+	go func() {
+		log.Info(ctx, "startup", "status", "debug v1 router started", "host", cfg.Web.DebugHost)
+
+		if err := http.ListenAndServe(cfg.Web.DebugHost, debug.Mux()); err != nil {
+			log.Error(ctx, "shutdown", "status", "debug v1 router closed", "host", cfg.Web.DebugHost, "msg", err)
+		}
+	}()
+
+	// -------------------------------------------------------------------------
+
+	shutdown := make(chan os.Signal, 1)
+	signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM)
+
+	sig := <-shutdown
+
+	log.Info(ctx, "shutdown", "status", "shutdown started", "signal", sig)
+	defer log.Info(ctx, "shutdown", "status", "shutdown complete", "signal", sig)
 
 	return nil
 }

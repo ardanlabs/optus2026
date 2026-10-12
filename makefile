@@ -14,3 +14,9 @@ run-help:
 
 run:
 	go run api/services/sales/main.go | go run api/tooling/logfmt/main.go
+
+statsviz:
+	$(OPEN_CMD) http://localhost:3010/debug/statsviz
+
+metrics-view:
+	expvarmon -ports="localhost:3010" -vars="build,requests,goroutines,errors,panics,mem:memstats.HeapAlloc,mem:memstats.HeapSys,mem:memstats.Sys"
