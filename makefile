@@ -30,3 +30,6 @@ statsviz:
 
 metrics-view:
 	expvarmon -ports="localhost:3010" -vars="build,requests,goroutines,errors,panics,mem:memstats.HeapAlloc,mem:memstats.HeapSys,mem:memstats.Sys"
+
+curl:
+	curl -il -X GET http://localhost:3000/test
