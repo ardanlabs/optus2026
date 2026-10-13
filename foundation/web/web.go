@@ -8,7 +8,11 @@ import (
 	"uuid"
 )
 
-type HandlerFunc func(ctx context.Context, w http.ResponseWriter, r *http.Request) error
+type Encoder interface {
+	Encode() (data []byte, contentType string, err error)
+}
+
+type HandlerFunc func(ctx context.Context, w http.ResponseWriter, r *http.Request) Encoder
 
 type App struct {
 	*http.ServeMux
@@ -30,12 +34,15 @@ func (a *App) HandleFunc(pattern string, handlerFunc HandlerFunc, mw ...MidFunc)
 	h := func(w http.ResponseWriter, r *http.Request) {
 		ctx := setTraceID(r.Context(), uuid.New().String())
 
-		if err := handlerFunc(ctx, w, r); err != nil {
+		resp := handlerFunc(ctx, w, r)
+		d, ct, err := resp.Encode()
+		if err != nil {
 			fmt.Println(err)
 			return
 		}
 
-		// I CAN PUT ANY CODE HERE
+		w.Header().Add("content-type", ct)
+		w.Write(d)
 	}
 
 	a.ServeMux.HandleFunc(pattern, h)

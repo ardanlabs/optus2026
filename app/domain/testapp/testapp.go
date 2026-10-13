@@ -4,19 +4,28 @@ package testapp
 import (
 	"context"
 	"encoding/json"
+	"math/rand/v2"
 	"net/http"
+
+	"github.com/ardanlabs/service/app/sdk/errs"
+	"github.com/ardanlabs/service/foundation/web"
 )
 
-func Test(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	// DECODE INPUT (JSON)
-	// CALL BUSINESS LAYER
-	// CREATE RESPONSE DATA
+type status struct {
+	Status string
+}
 
-	status := struct {
-		Status string
-	}{
-		Status: "OK",
+func (s status) Encode() ([]byte, string, error) {
+	data, err := json.Marshal(s)
+	return data, "application/json", err
+}
+
+func Test(ctx context.Context, w http.ResponseWriter, r *http.Request) web.Encoder {
+	if n := rand.IntN(100); n%2 == 0 {
+		return errs.Errorf(errs.NotFound, "THIS IS AN ERROR")
 	}
 
-	return json.NewEncoder(w).Encode(status)
+	return status{
+		Status: "OK",
+	}
 }
