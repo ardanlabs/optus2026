@@ -7,26 +7,30 @@ import (
 	"net/http"
 )
 
-type Handler func(ctx context.Context, w http.ResponseWriter, r *http.Request) error
+type HandlerFunc func(ctx context.Context, w http.ResponseWriter, r *http.Request) error
 
 type App struct {
 	*http.ServeMux
+	mw []MidFunc
 }
 
-func NewApp() *App {
+func NewApp(mw ...MidFunc) *App {
 	return &App{
 		ServeMux: http.NewServeMux(),
+		mw:       mw,
 	}
 }
 
 // HandleFunc is my new handler func.
-func (app *App) HandleFunc(pattern string, handler Handler) {
+func (a *App) HandleFunc(pattern string, handlerFunc HandlerFunc, mw ...MidFunc) {
+	handlerFunc = wrapMiddleware(mw, handlerFunc)
+	handlerFunc = wrapMiddleware(a.mw, handlerFunc)
 
 	h := func(w http.ResponseWriter, r *http.Request) {
 
 		// I CAN PUT ANY CODE HERE
 
-		if err := handler(r.Context(), w, r); err != nil {
+		if err := handlerFunc(r.Context(), w, r); err != nil {
 			fmt.Println(err)
 			return
 		}
@@ -34,5 +38,5 @@ func (app *App) HandleFunc(pattern string, handler Handler) {
 		// I CAN PUT ANY CODE HERE
 	}
 
-	app.ServeMux.HandleFunc(pattern, h)
+	a.ServeMux.HandleFunc(pattern, h)
 }
