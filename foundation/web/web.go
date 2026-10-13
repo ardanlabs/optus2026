@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"uuid"
 )
 
 type HandlerFunc func(ctx context.Context, w http.ResponseWriter, r *http.Request) error
@@ -27,10 +28,9 @@ func (a *App) HandleFunc(pattern string, handlerFunc HandlerFunc, mw ...MidFunc)
 	handlerFunc = wrapMiddleware(a.mw, handlerFunc)
 
 	h := func(w http.ResponseWriter, r *http.Request) {
+		ctx := setTraceID(r.Context(), uuid.New().String())
 
-		// I CAN PUT ANY CODE HERE
-
-		if err := handlerFunc(r.Context(), w, r); err != nil {
+		if err := handlerFunc(ctx, w, r); err != nil {
 			fmt.Println(err)
 			return
 		}
