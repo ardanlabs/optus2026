@@ -35,14 +35,11 @@ func (a *App) HandleFunc(pattern string, handlerFunc HandlerFunc, mw ...MidFunc)
 		ctx := setTraceID(r.Context(), uuid.New().String())
 
 		resp := handlerFunc(ctx, w, r)
-		d, ct, err := resp.Encode()
-		if err != nil {
+
+		if err := Respond(ctx, w, resp); err != nil {
 			fmt.Println(err)
 			return
 		}
-
-		w.Header().Add("content-type", ct)
-		w.Write(d)
 	}
 
 	a.ServeMux.HandleFunc(pattern, h)
